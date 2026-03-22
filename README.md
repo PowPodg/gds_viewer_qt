@@ -15,3 +15,9 @@ A responsive coroutine-style pipeline is implemented for loading data and buildi
 ### [GDSII Layout Reader Library](gds_core/README.md)
 
 ### [GDSII Viewer Based on Qt Widgets](gds_viewer/README.md)
+
+
+License: MIT.
+
+This project uses Qt, which is licensed under its own terms.
+See the Qt licensing information for details.

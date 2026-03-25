@@ -10,6 +10,10 @@ The `gds_core` library reads and parses GDS files, `gds_viewer` [displays](scree
 
 A responsive coroutine-style pipeline is implemented for loading data and building the scene.
 
+**Note.** The version presented here is **1.x.x** and contains code for **non-hierarchical GDSII**: only the first structure is displayed.
+The GDSII format description is available [here](https://boolean.klaasholwerda.nl/interface/bnf/gdsformat.html).  
+Support for **hierarchical GDSII** is implemented in version **2.x.x**. (For access to version 2.x.x, please contact me via private message).
+
 (In the **Release** build, `gds_viewer` works faster with the `example_gds/1Kpolyg.gds` file than [KLayout](https://klayout.de/)).
 
 ### [GDSII Layout Reader Library](gds_core/README.md)

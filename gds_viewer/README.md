@@ -16,7 +16,7 @@ The application opens a file, builds a scene from layout elements, and provides 
   - visibility on/off,
   - color selection,
   - element count per layer;
-- apply visibility and color changes to multiple selected rows at once;
+- apply visibility and color changes to multiple rows using **Shift + checkbox click** and **Shift + click on a color cell**;;
 - background data preparation and incremental scene construction;
 - progress indicator and loading cancellation;
 - display service information in the status bar:

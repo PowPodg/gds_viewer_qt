@@ -16,9 +16,9 @@ Support for **hierarchical GDSII** is implemented in version **2.x.x**. (For acc
 
 (In the **Release** build, `gds_viewer` works faster with the `example_gds/1Kpolyg.gds` file than [KLayout](https://klayout.de/)).
 
-### [GDSII Layout Reader Library](gds_core/README.md)
+### [GDSII Layout Reader Library](gds_core/)
 
-### [GDSII Viewer Based on Qt Widgets](gds_viewer/README.md)
+### [GDSII Viewer Based on Qt Widgets](gds_viewer/)
 
 ##
 

@@ -18,14 +18,24 @@ const T& getElement(const GdsElement& element) {
 const char* elementName(const GdsElement& element) {
     return std::visit([](const auto& value) -> const char* {
         using T = std::decay_t<decltype(value)>;
-        if constexpr (std::is_same_v<T, Boundary>) return "BOUNDARY";
-        if constexpr (std::is_same_v<T, Path>) return "PATH";
-        if constexpr (std::is_same_v<T, SRef>) return "SREF";
-        if constexpr (std::is_same_v<T, ARef>) return "AREF";
-        if constexpr (std::is_same_v<T, Text>) return "TEXT";
-        if constexpr (std::is_same_v<T, Node>) return "NODE";
-        if constexpr (std::is_same_v<T, Box>) return "BOX";
-        return "UNKNOWN";
+
+        if constexpr (std::is_same_v<T, Boundary>) {
+            return "BOUNDARY";
+        } else if constexpr (std::is_same_v<T, Path>) {
+            return "PATH";
+        } else if constexpr (std::is_same_v<T, SRef>) {
+            return "SREF";
+        } else if constexpr (std::is_same_v<T, ARef>) {
+            return "AREF";
+        } else if constexpr (std::is_same_v<T, Text>) {
+            return "TEXT";
+        } else if constexpr (std::is_same_v<T, Node>) {
+            return "NODE";
+        } else if constexpr (std::is_same_v<T, Box>) {
+            return "BOX";
+        } else {
+            return "UNKNOWN";
+        }
     }, element);
 }
 

@@ -1,4 +1,4 @@
-#include "Parser.hpp"
+﻿#include "Parser.hpp"
 
 #include <sstream>
 
@@ -18,25 +18,85 @@ namespace {
 
 Parser::Parser(RecordReader& reader) : reader_(&reader) {}
 
-//GdsLibrary Parser::parse() {
-//    auto library = parseLibrary();
-//    if (!reader_->eof()) {
-//        throw GdsError("Trailing data after ENDLIB");
-//    }
-//    return library;
-//}
+Parser::Parser(RecordReader& reader,
+    std::optional<std::size_t> totalBytes,
+    GdsReadProgressCallback onProgress,
+    GdsReadProgressOptions progressOptions)
+    : reader_(&reader),
+    onProgress_(std::move(onProgress)),
+    progressOptions_(std::move(progressOptions)) {
+    progress_.totalBytes = totalBytes;
+}
+
+void Parser::emitProgress(bool force) {
+
+    if (!onProgress_) {
+        return;
+    }
+
+    progress_.bytesRead = reader_->position();
+    progress_.recordsRead = reader_->recordsRead();
+
+    const auto now = std::chrono::steady_clock::now();
+
+    if (!hasEmittedProgress_) {
+        if (!onProgress_(progress_)) {
+            throw GdsError("GDS reading cancelled");
+        }
+
+        hasEmittedProgress_ = true;
+        lastEmittedBytes_ = progress_.bytesRead;
+        lastEmittedStage_ = progress_.stage;
+        lastEmitTime_ = now;
+        return;
+    }
+
+    if (!force) {
+        const bool stageChanged =
+            progressOptions_.emitOnStageChange &&
+            (progress_.stage != lastEmittedStage_);
+
+        const std::size_t bytesDelta = progress_.bytesRead - lastEmittedBytes_;
+        const bool enoughBytes = bytesDelta >= progressOptions_.minBytesDelta;
+        const bool enoughTime = (now - lastEmitTime_) >= progressOptions_.minInterval;
+
+        if (!stageChanged && !enoughBytes && !enoughTime) {
+            return;
+        }
+    }
+
+    if (!onProgress_(progress_)) {
+        throw GdsError("GDS reading cancelled");
+    }
+
+    lastEmittedBytes_ = progress_.bytesRead;
+    lastEmittedStage_ = progress_.stage;
+    lastEmitTime_ = now;
+}
+
+
 
 GdsLibrary Parser::parse() {
+    progress_.stage = GdsReadProgress::Stage::ReadingLibrary;
+    progress_.currentStructureName.clear();
+    emitProgress(true);
+
     auto library = parseLibrary();
     if (!reader_->consumeTrailingZeroPadding()) {
         throw GdsError("Trailing non-zero data after ENDLIB");
     }
+
+    progress_.stage = GdsReadProgress::Stage::Finished;
+    progress_.currentStructureName.clear();
+    emitProgress(true);
+
     return library;
 }
 
 const Record& Parser::peek() {
     if (!lookahead_.has_value()) {
         lookahead_ = reader_->read();
+        emitProgress(false);
     }
     return *lookahead_;
 }
@@ -47,7 +107,9 @@ Record Parser::take() {
         lookahead_.reset();
         return record;
     }
-    return reader_->read();
+    Record record = reader_->read();
+    emitProgress(false);
+    return record;
 }
 
 bool Parser::accept(RecordType type, Record* out) {
@@ -122,6 +184,10 @@ GdsStructure Parser::parseStructure() {
     structure.created = parseTimestampPairFirst(expect(RecordType::BGNSTR), structure.modified);
     structure.name = decodeAsciiString(expect(RecordType::STRNAME));
 
+    progress_.stage = GdsReadProgress::Stage::ReadingStructure;
+    progress_.currentStructureName = structure.name;
+    emitProgress(true);
+
     Record record;
     if (accept(RecordType::STRCLASS, &record)) {
         structure.strclass = static_cast<std::uint16_t>(parseSingleInt2(record));
@@ -136,6 +202,16 @@ GdsStructure Parser::parseStructure() {
     }
 
     expect(RecordType::ENDSTR);
+
+    ++progress_.structuresParsed;
+
+    if (progressOptions_.emitOnStructureBoundary) {
+        emitProgress(true);
+    }
+    else {
+        emitProgress(false);
+    }
+
     return structure;
 }
 
@@ -152,7 +228,7 @@ GdsElement Parser::parseElement() {
         throw GdsError(std::string("Unexpected element start record: ") + toString(peek().header.recordType));
     }
 }
-
+//общий опциональный (необязательный) префикс element records:
 ElementCommon Parser::parseCommonPrefix() {
     ElementCommon common;
     Record record;
@@ -168,7 +244,7 @@ ElementCommon Parser::parseCommonPrefix() {
     }
     return common;
 }
-
+// Parses zero or more property pairs:
 void Parser::parseProperties(ElementCommon& common) {
     while (peek().header.recordType == RecordType::PROPATTR) {
         const auto attr = parseSingleInt2(expect(RecordType::PROPATTR));
@@ -176,7 +252,7 @@ void Parser::parseProperties(ElementCommon& common) {
         common.properties.push_back(Property{attr, value});
     }
 }
-
+// Parses the optional transformation block:
 void Parser::parseOptionalStrans(std::optional<StransFlags>& flags,
                                  std::optional<Magnitude>& mag,
                                  std::optional<Angle>& angle) {
@@ -256,7 +332,8 @@ StransFlags Parser::parseStransFlags(const Record& record) const {
         .absoluteAngle = (bits & 0x0002U) != 0U,
     };
 }
-
+// REFLIBS and FONTS payloads are stored as fixed-width ASCII name slots.
+// Each slot is read independently and trimmed at the first '\0'.
 std::vector<std::string> Parser::splitFixedAsciiNames(const Record& record, std::size_t chunkSize) const {
     if (record.header.dataType != DataType::Ascii) {
         throw GdsError(std::string(toString(record.header.recordType)) + " must be ASCII");
@@ -280,7 +357,7 @@ std::vector<std::string> Parser::splitFixedAsciiNames(const Record& record, std:
     }
     return result;
 }
-
+// ---------- Element parsers: polygonal geometry --------
 Boundary Parser::parseBoundary() {
     expect(RecordType::BOUNDARY);
     Boundary element;
@@ -313,7 +390,7 @@ Path Parser::parsePath() {
     expect(RecordType::ENDEL);
     return element;
 }
-
+// ---------- Element parsers: references ----------
 SRef Parser::parseSRef() {
     expect(RecordType::SREF);
     SRef element;
@@ -356,7 +433,7 @@ ARef Parser::parseARef() {
     expect(RecordType::ENDEL);
     return element;
 }
-
+// ---------- Element parsers: text / node / box ----------
 Text Parser::parseText() {
     expect(RecordType::TEXT);
     Text element;

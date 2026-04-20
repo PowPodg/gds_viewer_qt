@@ -13,7 +13,8 @@ std::size_t InputStream::position() const noexcept {
 bool InputStream::eof() const {
     return input_->peek() == std::char_traits<char>::eof();
 }
-
+// Consumes trailing zero bytes after ENDLIB.
+// Returns false if any non-zero trailing byte is encountered.
 bool InputStream::consumeTrailingZeroPadding() {
     while (true) {
         const int ch = input_->peek();

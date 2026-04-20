@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../include/GdsLibrary.hpp"
+#include "../../include/GdsProgress.hpp"
 #include "Record.hpp"
 #include "RecordReader.hpp"
 
@@ -12,11 +13,27 @@ class Parser {
 public:
     explicit Parser(RecordReader& reader);
 
+    Parser(RecordReader& reader,
+        std::optional<std::size_t> totalBytes,
+        GdsReadProgressCallback onProgress,
+        GdsReadProgressOptions progressOptions = {});
+
     GdsLibrary parse();
 
 private:
     RecordReader* reader_{};
     std::optional<Record> lookahead_;
+
+    GdsReadProgress progress_{};
+    GdsReadProgressCallback onProgress_{};
+    GdsReadProgressOptions progressOptions_{};
+
+    bool hasEmittedProgress_{ false };
+    std::size_t lastEmittedBytes_{ 0 };
+    GdsReadProgress::Stage lastEmittedStage_{ GdsReadProgress::Stage::ReadingLibrary };
+    std::chrono::steady_clock::time_point lastEmitTime_{};
+
+    void emitProgress(bool force = false);
 
     const Record& peek();
     Record take();

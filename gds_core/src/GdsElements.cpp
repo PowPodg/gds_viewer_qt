@@ -21,24 +21,32 @@ const char* elementName(const GdsElement& element) {
 
         if constexpr (std::is_same_v<T, Boundary>) {
             return "BOUNDARY";
-        } else if constexpr (std::is_same_v<T, Path>) {
+        }
+        else if constexpr (std::is_same_v<T, Path>) {
             return "PATH";
-        } else if constexpr (std::is_same_v<T, SRef>) {
+        }
+        else if constexpr (std::is_same_v<T, SRef>) {
             return "SREF";
-        } else if constexpr (std::is_same_v<T, ARef>) {
+        }
+        else if constexpr (std::is_same_v<T, ARef>) {
             return "AREF";
-        } else if constexpr (std::is_same_v<T, Text>) {
+        }
+        else if constexpr (std::is_same_v<T, Text>) {
             return "TEXT";
-        } else if constexpr (std::is_same_v<T, Node>) {
+        }
+        else if constexpr (std::is_same_v<T, Node>) {
             return "NODE";
-        } else if constexpr (std::is_same_v<T, Box>) {
+        }
+        else if constexpr (std::is_same_v<T, Box>) {
             return "BOX";
-        } else {
+        }
+        else {
             return "UNKNOWN";
         }
-    }, element);
+        }, element);
 }
-
+// Performs basic structural validation of parsed elements.
+// This checks record-level consistency only; it is not full geometric validation.
 void validateElement(const GdsElement& element) {
     std::visit([](const auto& value) {
         using T = std::decay_t<decltype(value)>;

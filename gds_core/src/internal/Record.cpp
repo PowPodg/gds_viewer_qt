@@ -65,7 +65,7 @@ const char* toString(DataType type) {
     }
     return "UnknownDataType";
 }
-
+// Payload decoding helpers for GDS primitive data encodings.
 std::vector<std::int16_t> decodeInt2Array(const Record& record) {
     if (record.header.dataType != DataType::Int2) {
         throw GdsError(std::string("Record ") + toString(record.header.recordType) + " is not Int2");
@@ -112,7 +112,10 @@ std::string decodeAsciiString(const Record& record) {
     }
     return value;
 }
-
+// Decodes GDS 8-byte real format:
+// - bit 7 of byte 0: sign
+// - lower 7 bits of byte 0: exponent with bias 64, base 16
+// - bytes 1..7: fractional mantissa in base 256
 double decodeReal8(const std::uint8_t* bytes) {
     bool allZero = true;
     for (int i = 0; i < 8; ++i) {

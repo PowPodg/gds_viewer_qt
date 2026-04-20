@@ -114,6 +114,37 @@ This is important because some GDS files are padded with zeros to align with a p
 If only `0x00` bytes follow `ENDLIB`, such trailing data is treated as valid.  
 If any non-zero data appears after `ENDLIB`, it is treated as an error.
 
+##### 4. Progress reporting and cancellation
+- Progress callback support while reading GDS files
+- Configurable progress update frequency via GdsReadProgressOptions
+- Cancellation of GDS reading by returning false from progress callback
+
+<details>
+<summary><strong>Example</strong></summary>
+
+```cpp
+std::atomic_bool cancelRequested{false};
+
+gds::GdsReader reader;
+gds::GdsReadProgressOptions options;
+
+auto library = reader.readFileWithProgress(
+    "example.gds",
+    [&](const gds::GdsReadProgress& p) -> bool {
+        const int progress =
+            (p.totalBytes && *p.totalBytes != 0)
+            ? static_cast<int>((100.0 * p.bytesRead) / *p.totalBytes)
+            : 0;
+
+        // update UI / progress dialog here
+
+        return !cancelRequested.load(std::memory_order_relaxed);
+    },
+    options);
+```
+</details>
+
+
 <details>
 <summary><strong>Project Structure</strong></summary>
 

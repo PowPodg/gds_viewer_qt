@@ -16,9 +16,18 @@ Support for **hierarchical GDSII** is implemented in version **2.x.x**. (For acc
 
 (In the **Release** build, `gds_viewer` works faster with the `example_gds/1Kpolyg.gds` file than [KLayout](https://klayout.de/)).
 
-### [GDSII Layout Reader Library](gds_core/)
+### [GDSII Layout Reader Library](https://github.com/PowPodg/gds_core)
+`gds_core` is maintained as a separate repository and is loaded by this project through CMake `FetchContent`.
 
 ### [GDSII Viewer Based on Qt Widgets](gds_viewer/)
+
+
+## Dependencies
+
+- C++20 compiler
+- CMake 3.20 or newer
+- Qt 6 with Widgets and Concurrent components
+- [`gds_core`](https://github.com/PowPodg/gds_core), loaded automatically through CMake `FetchContent`
 
 ##
 

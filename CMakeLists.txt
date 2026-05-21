@@ -94,5 +94,14 @@ if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
-add_subdirectory(gds_core)
+include(FetchContent)
+
+FetchContent_Declare(
+    gds_core
+    GIT_REPOSITORY https://github.com/PowPodg/gds_core.git
+    GIT_TAG v1.0.0
+)
+
+FetchContent_MakeAvailable(gds_core)
+
 add_subdirectory(gds_viewer)
